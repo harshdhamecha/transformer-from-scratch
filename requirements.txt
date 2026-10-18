@@ -1,0 +1,6 @@
+# torch installed from: https://download.pytorch.org/whl/cu130
+torch==2.14.1+cu130
+pytest==9.1.1
+numpy==2.5.4
+matplotlib==3.11.2
+ipykernel==7.4.0
