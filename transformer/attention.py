@@ -3,6 +3,7 @@
 
 import numpy as np
 import torch
+import math
 
 
 def attention(query, key, value, mask=None):
@@ -12,4 +13,9 @@ def attention(query, key, value, mask=None):
     Output shape - (..., T_q, d_v).
     Mask convention: True indicates positions that should be attended to.
     """
-    raise NotImplementedError("attention function is not implemented yet.")
+    d_k = query.shape[-1]
+    score = torch.matmul(query, torch.transpose(key, -1, -2))
+    scaled_score = score / math.sqrt(d_k)
+    weighted_score = torch.softmax(scaled_score, dim=-1)
+    output = torch.matmul(weighted_score, value)
+    return output, weighted_score
