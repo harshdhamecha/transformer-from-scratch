@@ -14,7 +14,7 @@ def test_attention():
     output, weights = attention(query, key, value)
     assert output.shape == (2, 5, 6)
     assert weights.shape == (2, 5, 7)
-    assert torch.testing.assert_close(weights.sum(axis=2), 1, 1e-6)
+    torch.testing.assert_close(weights.sum(axis=2), torch.ones(2, 5))
 
 
 def test_attention_weights():
@@ -22,7 +22,7 @@ def test_attention_weights():
     key = torch.rand(2, 6, 4)  # (batch, T_k, d_k)
     value = torch.rand(2, 6, 4)  # (batch, T_k, d_v)
     _, weights = attention(query, key, value, mask=causal_mask(6))
-    assert torch.testing.assert_close(weights.sum(axis=2), 1, 1e-6)
+    torch.testing.assert_close(weights.sum(axis=2), torch.ones(2, 6))
 
 
 def test_attention_extra_dim():
