@@ -1,7 +1,5 @@
 # Milestone 1: Scaled dot-product attention and masks
 
-## Concepts
-
 ## Answers to questions
 1. Shape of `Q: (..., T_q, d_k)`, `K: (..., T_k, d_k)` and `V: (..., T_k, d_v)`. <br> 
     - Attention score: Matrix Multiplication of Q and K transpose. So, Attention Score shape: `(..., T_q, T_k)`.
@@ -20,4 +18,8 @@
 
 ## Bugs I hit and their causes
 
-## What I learned
+1. The circular `tril` check. Used hard-coded mask.
+2. Forgot to set tolerance in `torch.testing.assert_close`. Set `atol` and `rtol`.
+3. Added `assert` with `torch.testing.assert_close`. Removed `assert`.
+4. Mixed `query` and `key` axes.
+5. Filled all values with mask without filtering in causal mask.
