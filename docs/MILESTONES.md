@@ -30,9 +30,9 @@ Every milestone has the same structure:
 
 ---
 
-## M1: Scaled dot-product attention and masks
+## M1: Scaled dot-product attention and causal mask
 
-**Goal:** A correct, well-tested attention function and the two mask helpers every later milestone depends on.
+**Goal:** A correct, well-tested attention function, plus the causal mask needed to test it.
 
 **Build:**
 
@@ -48,7 +48,8 @@ In `transformer/attention.py`:
 In `transformer/masks.py`:
 
 - `causal_mask(T)`: boolean `(T, T)` tensor, `True` on and below the diagonal.
-- `padding_mask(tokens, pad_id)`: takes token IDs of shape `(B, T)` and returns a boolean `(B, 1, T)` tensor, `True` where the token is not padding.
+
+(The padding mask is deferred to M4, where token IDs and padded batches first appear.)
 
 **Know:**
 
@@ -57,7 +58,6 @@ In `transformer/masks.py`:
 3. Why does masking set scores to a large negative value instead of 0? Why is it done before softmax rather than after?
 4. What does softmax produce for a row that is entirely `-inf`? What does *your* function produce for a fully masked row, and why?
 5. Why divide by √d_k? Give the variance argument and name the specific gradient problem it prevents.
-6. Why is the padding mask `(B, 1, T)` and not `(B, T, T)`? Which dimension does broadcasting stretch?
 
 **Done when** (all in `tests/test_attention.py` and `tests/test_masks.py`):
 
@@ -65,11 +65,11 @@ In `transformer/masks.py`:
 2. **Rows sum to 1:** every row of the weights sums to 1 within `1e-6`.
 3. **Causal zeros:** with T = 6 and `causal_mask(6)`, every weight above the diagonal is exactly 0.
 4. **No future leakage:** with a causal mask, change K and V at position 5 only. Outputs at positions 0–4 are unchanged.
-5. **Padding keys get zero weight:** for a batch where the last 2 tokens of one sentence are padding, every query's weights on those 2 keys are exactly 0.
+5. **Masked keys get zero weight:** with a hand-written mask that blocks the last 2 keys, every query's weights on those 2 keys are exactly 0.
 6. **Fully masked row:** a row with every position masked produces no NaN in the output.
 7. **Reference match:** output matches `F.scaled_dot_product_attention` within `1e-5`, both without a mask and with a causal mask. (Check what `True` means in its mask argument before comparing.)
 8. **Extra dimensions:** q, k, v of shape `(2, 3, 5, 4)` (3 stands in for heads) work without any code changes.
-9. **Mask helpers:** `causal_mask(4)` equals the expected 4×4 lower-triangular pattern; `padding_mask` returns the right values and shape `(B, 1, T)` for a hand-written example.
+9. **Causal mask helper:** `causal_mask(4)` equals the expected 4×4 lower-triangular pattern, with dtype `torch.bool`.
 
 ---
 
@@ -135,21 +135,26 @@ In `transformer/masks.py`:
 
 **Goal:** The encoder half of the model.
 
-**Build** (in `encoder.py`):
+**Build:**
 
-- `EncoderLayer`: self-attention, then feed-forward. Each is wrapped as `x = LayerNorm(x + Dropout(sublayer(x)))` (the paper's post-norm arrangement).
-- `Encoder`: embeddings + positional encoding, then N stacked layers.
+- In `masks.py`: `padding_mask(tokens, pad_id)`. Takes token IDs of shape `(B, T)` (integers from the vocabulary, before embedding) and the ID the vocabulary assigns to `<pad>`. Returns a boolean `(B, 1, T)` tensor, `True` where the token is not padding, on the same device as `tokens`.
+- In `encoder.py`:
+  - `EncoderLayer`: self-attention, then feed-forward. Each is wrapped as `x = LayerNorm(x + Dropout(sublayer(x)))` (the paper's post-norm arrangement).
+  - `Encoder`: embeddings + positional encoding, then N stacked layers.
 
 **Know:**
 
 1. What problem do residual connections solve?
 2. Post-norm vs pre-norm: what is the difference, and why did later models move to pre-norm?
+3. Why does a batch of sentences need padding at all?
+4. Why is the padding mask `(B, 1, T)` and not `(B, T, T)`? Which dimension does broadcasting stretch?
 
 **Done when:**
 
-1. Shapes are preserved through the stack.
-2. In eval mode, two identical forward passes give identical outputs (dropout is off).
-3. **Padding leak test:** change only the pad token IDs in a sentence. Outputs at real-token positions are unchanged.
+1. `padding_mask` returns the right values, shape `(B, 1, T)` and dtype for a hand-written batch.
+2. Shapes are preserved through the stack.
+3. In eval mode, two identical forward passes give identical outputs (dropout is off).
+4. **Padding leak test:** change only the pad token IDs in a sentence. Outputs at real-token positions are unchanged.
 
 ---
 
