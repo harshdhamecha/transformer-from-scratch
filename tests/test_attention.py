@@ -22,6 +22,7 @@ def test_attention_weights():
     key = torch.rand(2, 6, 4)  # (batch, T_k, d_k)
     value = torch.rand(2, 6, 4)  # (batch, T_k, d_v)
     _, weights = attention(query, key, value, mask=causal_mask(6))
+    torch.testing.assert_close(torch.triu(weights, diagonal=1), torch.zeros_like(weights))
     torch.testing.assert_close(weights.sum(axis=2), torch.ones(2, 6))
 
 
