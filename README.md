@@ -6,7 +6,7 @@ The original encoder-decoder Transformer implemented from the paper, without tut
 
 ## Progress
 
-- [ ] M1 Scaled dot-product attention and masks
+- [x] M1 Scaled dot-product attention and masks
 - [ ] M2 Multi-head attention
 - [ ] M3 LayerNorm, feed-forward, positional encoding, embeddings
 - [ ] M4 Encoder
