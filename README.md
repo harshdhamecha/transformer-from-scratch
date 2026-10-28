@@ -1,5 +1,7 @@
 # Transformer from Scratch
 
+[![tests](https://github.com/harshdhamecha/transformer-from-scratch/actions/workflows/tests.yml/badge.svg)](https://github.com/harshdhamecha/transformer-from-scratch/actions/workflows/tests.yml)
+
 The original encoder-decoder Transformer implemented from the paper, without tutorials or reference code.
 
 ## Progress
