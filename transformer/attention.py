@@ -16,6 +16,10 @@ def attention(query, key, value, mask=None):
     d_k = query.shape[-1]
     score = torch.matmul(query, torch.transpose(key, -1, -2))
     scaled_score = score / math.sqrt(d_k)
+    if mask is not None:
+        fill_val = torch.finfo(scaled_score.dtype).min
+        add_matrix = torch.where(mask == False, fill_val, scaled_score)
+        scaled_score = add_matrix
     weighted_score = torch.softmax(scaled_score, dim=-1)
     output = torch.matmul(weighted_score, value)
     return output, weighted_score
