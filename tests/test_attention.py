@@ -83,7 +83,11 @@ def test_multihead_attn_shape():
 
 def test_multihead_params_count():
     # M2.2: Parameter count - 4 * square(d_model) + 4 * d_model
-    pass
+    d_model, h = 6, 3
+    params1 = 4 * d_model * d_model + 4 * d_model
+    multihead_attn1 = MultiHeadAttention(d_model, h)
+    params2 = sum(p.numel() for p in multihead_attn1.parameters())
+    assert params1 == params2
 
 
 def test_multihead_reference_non_mask():
@@ -134,11 +138,16 @@ def test_multihead_reference_masked():
     torch.testing.assert_close(output2, output1, atol=1e-5, rtol=0)
 
 
-def test_multihead_single_head():
-    # M2.4: h=1 equals a hand computation
-    pass
-
-
 def test_multihead_leakage():
     # M2.5: No future leakage
-    pass
+    B, T = 2, 5
+    d_model, h = 6, 3
+    input_ = torch.randn(B, T, d_model)
+    multihead_attn1 = MultiHeadAttention(d_model, h)
+    mask = causal_mask(5)
+    output1, _ = multihead_attn1(input_, input_, input_, mask=mask)
+    input__ = input_.clone()
+    input__[:, 4, :] = 2.4354
+    output2, _ = multihead_attn1(input__, input__, input__, mask=mask)
+    assert torch.all(output1[:, :4, :] == output2[:, :4, :])
+    assert torch.all(output1[:, 4, :] != output2[:, 4, :])
