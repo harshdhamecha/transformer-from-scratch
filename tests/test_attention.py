@@ -86,8 +86,8 @@ def test_multihead_params_count():
     pass
 
 
-def test_multihead_reference():
-    # M2.3: Check output with torch's reference
+def test_multihead_reference_non_mask():
+    # M2.3.1: Check output with torch's reference without mask
     B, T_q, T_k = 2, 5, 7
     d_model, h = 6, 3
     query = torch.randn(B, T_q, d_model)
@@ -106,6 +106,31 @@ def test_multihead_reference():
         multihead_attn2.out_proj.weight.copy_(multihead_attn1.w_o.weight)
         multihead_attn2.out_proj.bias.copy_(multihead_attn1.w_o.bias)
     output2, _ = multihead_attn2(query, key, value)
+    torch.testing.assert_close(output2, output1, atol=1e-5, rtol=0)
+
+
+def test_multihead_reference_masked():
+    # M2.3.2: Check output with torch's reference with mask
+    B, T_q, T_k = 2, 5, 5
+    d_model, h = 6, 3
+    query = torch.randn(B, T_q, d_model)
+    key = torch.randn(B, T_k, d_model)
+    value = torch.randn(B, T_k, d_model)
+    multihead_attn1 = MultiHeadAttention(d_model, h)
+    mask = causal_mask(5)
+    output1, _ = multihead_attn1(query, key, value, mask=mask)
+    mask_ = ~mask
+    multihead_attn2 = nn.MultiheadAttention(d_model, h, batch_first=True)
+    weight_names = [multihead_attn1.w_q.weight, multihead_attn1.w_k.weight, multihead_attn1.w_v.weight]
+    bias_names = [multihead_attn1.w_q.bias, multihead_attn1.w_k.bias, multihead_attn1.w_v.bias]
+    in_weights = torch.cat(weight_names, dim=0)
+    in_bias = torch.cat(bias_names, dim=0)
+    with torch.no_grad():
+        multihead_attn2.in_proj_weight.copy_(in_weights)
+        multihead_attn2.in_proj_bias.copy_(in_bias)
+        multihead_attn2.out_proj.weight.copy_(multihead_attn1.w_o.weight)
+        multihead_attn2.out_proj.bias.copy_(multihead_attn1.w_o.bias)
+    output2, _ = multihead_attn2(query, key, value, attn_mask=mask_)
     torch.testing.assert_close(output2, output1, atol=1e-5, rtol=0)
 
 
