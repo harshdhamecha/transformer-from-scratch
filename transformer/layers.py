@@ -40,6 +40,8 @@ class PositionalEncoding(nn.Module):
 class Embeddings(nn.Module):
     def __init__(self, vocab_size, d_model):
         super().__init__()
+        self.d_model = d_model
+        self.embeddings = nn.Embedding(num_embeddings=vocab_size, embedding_dim=d_model)
 
     def forward(self, x):
-        pass
+        return self.embeddings(x) * math.sqrt(self.d_model)
