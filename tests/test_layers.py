@@ -2,7 +2,7 @@
 
 import torch.nn.functional as F
 import torch
-from transformer.layers import LayerNorm, Embeddings
+from transformer.layers import LayerNorm, Embeddings, FeedForward
 
 
 
@@ -32,3 +32,16 @@ def test_embedding():
     embedding = Embeddings(vocab_size, d_model)
     output = embedding(token)
     assert output.shape == (B, T, d_model)
+
+
+def test_ffn():
+    # M3.4: Output shapes and params
+    B, T, d_model = 2, 3, 4
+    d_ff = 16
+    x = torch.randn(B, T, d_model)
+    ffn = FeedForward(d_model, d_ff, dropout=0.0)
+    output = ffn(x)
+    assert output.shape == (B, T, d_model)
+    params1 = 2 * (d_model * d_ff) + d_model + d_ff
+    params2 = sum(p.numel() for p in ffn.parameters())
+    assert params1 == params2
