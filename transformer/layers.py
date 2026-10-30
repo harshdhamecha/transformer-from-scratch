@@ -1,31 +1,39 @@
 """LayerNorm, position-wise feed-forward, sinusoidal positional encoding, token embeddings (M3)."""
 
-
+import torch
 import torch.nn as nn
+import math
+
 
 
 
 class LayerNorm(nn.Module):
     def __init__(self, d_model, eps):
         super().__init__()
+        self.gamma = nn.Parameter(torch.ones(d_model))
+        self.beta = nn.Parameter(torch.zeros(d_model))
+        self.eps = eps
 
-    def forward(self):
-        pass
+    def forward(self, x):
+        computed_mean = x.mean(dim=-1, keepdim=True)
+        computed_var = x.var(dim=-1, keepdim=True, correction=0)
+        result = ((x - computed_mean) / torch.sqrt(computed_var + self.eps) * self.gamma) + self.beta
+        return result
 
 
 class FeedForward(nn.Module):
     def __init__(self, d_model, d_ff, dropout):
         super().__init__()
 
-    def forward(self):
+    def forward(self, x):
         pass
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, max_len, dropout):
+    def __init__(self, d_model, max_len, dropout):
         super().__init__()
 
-    def forward(self):
+    def forward(self, x):
         pass
 
 
@@ -33,5 +41,5 @@ class Embeddings(nn.Module):
     def __init__(self, vocab_size, d_model):
         super().__init__()
 
-    def forward(self):
+    def forward(self, x):
         pass
