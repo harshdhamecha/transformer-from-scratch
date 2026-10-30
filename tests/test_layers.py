@@ -2,7 +2,7 @@
 
 import torch.nn.functional as F
 import torch
-from transformer.layers import LayerNorm, Embeddings, FeedForward
+from transformer.layers import LayerNorm, Embeddings, FeedForward, PositionalEncoding
 
 
 
@@ -45,3 +45,24 @@ def test_ffn():
     params1 = 2 * (d_model * d_ff) + d_model + d_ff
     params2 = sum(p.numel() for p in ffn.parameters())
     assert params1 == params2
+
+
+def test_pe():
+    # M3.2: 1st row check
+    # M3.3: Parameters is empty, table key in state_dict() and it doesn't require grad
+    # M3.4: Output value and shape
+    d_model, max_len = 4, 10
+    B, T = 2, 3
+    input = torch.zeros(B, T, d_model)
+    pe = PositionalEncoding(d_model, max_len, dropout=0.0)
+    first_row = torch.tensor([0, 1, 0, 1], dtype=torch.float32)
+    params = sum(p.numel() for p in pe.parameters())
+    assert params == 0
+    assert torch.equal(pe.lookup_table[0], first_row)
+    assert 'lookup_table' in pe.state_dict().keys()
+    assert not pe.lookup_table.requires_grad
+    torch.testing.assert_close(pe.lookup_table[1, 2].item(), 0.01, atol=1e-4, rtol=0)
+    output = pe(input)
+    torch.testing.assert_close(output[0, 0, :], pe.lookup_table[0])
+    torch.testing.assert_close(output[0, 1, :], pe.lookup_table[1])
+    assert output.shape == input.shape
