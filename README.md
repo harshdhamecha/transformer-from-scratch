@@ -7,13 +7,16 @@ The original encoder-decoder Transformer implemented from the paper, without tut
 ## Progress
 
 - [x] M1 Scaled dot-product attention and masks
-- [ ] M2 Multi-head attention
-- [ ] M3 LayerNorm, feed-forward, positional encoding, embeddings
+- [x] M2 Multi-head attention
+- [x] M3 LayerNorm, feed-forward, positional encoding, embeddings
 - [ ] M4 Encoder
 - [ ] M5 Decoder
 - [ ] M6 Full Transformer
 - [ ] M7 Toy task: sequence reversal
 - [ ] M8 Translation
+
+## Images
+![Positional Encoding Chart](/assets/positional_encoding.png)
 
 ## Setup
 
