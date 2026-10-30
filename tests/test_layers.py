@@ -2,7 +2,7 @@
 
 import torch.nn.functional as F
 import torch
-from transformer.layers import LayerNorm
+from transformer.layers import LayerNorm, Embeddings
 
 
 
@@ -22,3 +22,13 @@ def test_layer_norm():
     output1 = layernorm1(x)
     output2 = F.layer_norm(x, (d_model,), weight=weight, bias=bias, eps=eps)
     torch.testing.assert_close(output1, output2, atol=1e-5, rtol=0)
+
+
+def test_embedding():
+    # M3.4: Embedding Output shapes
+    vocab_size = 10
+    B, T, d_model = 2, 3, 4
+    token = torch.randint(low=0, high=vocab_size, size=(B, T))
+    embedding = Embeddings(vocab_size, d_model)
+    output = embedding(token)
+    assert output.shape == (B, T, d_model)
