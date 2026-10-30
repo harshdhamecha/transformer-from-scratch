@@ -2,9 +2,11 @@
 
 
 import torch
-from transformer.attention import attention
+from transformer.attention import attention, MultiHeadAttention
 from transformer.masks import causal_mask
 import torch.nn.functional as F
+import torch.nn as nn
+
 
 
 def test_attention():
@@ -65,3 +67,87 @@ def test_attention_torch():
     out3, _ = attention(q2, k2, v2)
     torch.testing.assert_close(torch_out3, out3, atol=1e-5, rtol=0)
 
+
+def test_multihead_attn_shape():
+    # M2.1: Output shape equals query shape
+    B, T_q, T_k = 2, 5, 7
+    d_model, h = 6, 3
+    query = torch.randn(B, T_q, d_model)
+    key = torch.randn(B, T_k, d_model)
+    value = torch.randn(B, T_k, d_model)
+    multihead_attn = MultiHeadAttention(d_model, h)
+    output, weights = multihead_attn(query, key, value)
+    assert output.shape == (B, T_q, d_model)
+    assert weights.shape == (B, h, T_q, T_k)
+
+
+def test_multihead_params_count():
+    # M2.2: Parameter count - 4 * square(d_model) + 4 * d_model
+    d_model, h = 6, 3
+    params1 = 4 * d_model * d_model + 4 * d_model
+    multihead_attn1 = MultiHeadAttention(d_model, h)
+    params2 = sum(p.numel() for p in multihead_attn1.parameters())
+    assert params1 == params2
+
+
+def test_multihead_reference_non_mask():
+    # M2.3.1: Check output with torch's reference without mask
+    B, T_q, T_k = 2, 5, 7
+    d_model, h = 6, 3
+    query = torch.randn(B, T_q, d_model)
+    key = torch.randn(B, T_k, d_model)
+    value = torch.randn(B, T_k, d_model)
+    multihead_attn1 = MultiHeadAttention(d_model, h)
+    output1, _ = multihead_attn1(query, key, value)
+    multihead_attn2 = nn.MultiheadAttention(d_model, h, batch_first=True)
+    weight_names = [multihead_attn1.w_q.weight, multihead_attn1.w_k.weight, multihead_attn1.w_v.weight]
+    bias_names = [multihead_attn1.w_q.bias, multihead_attn1.w_k.bias, multihead_attn1.w_v.bias]
+    in_weights = torch.cat(weight_names, dim=0)
+    in_bias = torch.cat(bias_names, dim=0)
+    with torch.no_grad():
+        multihead_attn2.in_proj_weight.copy_(in_weights)
+        multihead_attn2.in_proj_bias.copy_(in_bias)
+        multihead_attn2.out_proj.weight.copy_(multihead_attn1.w_o.weight)
+        multihead_attn2.out_proj.bias.copy_(multihead_attn1.w_o.bias)
+    output2, _ = multihead_attn2(query, key, value)
+    torch.testing.assert_close(output2, output1, atol=1e-5, rtol=0)
+
+
+def test_multihead_reference_masked():
+    # M2.3.2: Check output with torch's reference with mask
+    B, T_q, T_k = 2, 5, 5
+    d_model, h = 6, 3
+    query = torch.randn(B, T_q, d_model)
+    key = torch.randn(B, T_k, d_model)
+    value = torch.randn(B, T_k, d_model)
+    multihead_attn1 = MultiHeadAttention(d_model, h)
+    mask = causal_mask(5)
+    output1, _ = multihead_attn1(query, key, value, mask=mask)
+    mask_ = ~mask
+    multihead_attn2 = nn.MultiheadAttention(d_model, h, batch_first=True)
+    weight_names = [multihead_attn1.w_q.weight, multihead_attn1.w_k.weight, multihead_attn1.w_v.weight]
+    bias_names = [multihead_attn1.w_q.bias, multihead_attn1.w_k.bias, multihead_attn1.w_v.bias]
+    in_weights = torch.cat(weight_names, dim=0)
+    in_bias = torch.cat(bias_names, dim=0)
+    with torch.no_grad():
+        multihead_attn2.in_proj_weight.copy_(in_weights)
+        multihead_attn2.in_proj_bias.copy_(in_bias)
+        multihead_attn2.out_proj.weight.copy_(multihead_attn1.w_o.weight)
+        multihead_attn2.out_proj.bias.copy_(multihead_attn1.w_o.bias)
+    output2, _ = multihead_attn2(query, key, value, attn_mask=mask_)
+    torch.testing.assert_close(output2, output1, atol=1e-5, rtol=0)
+
+
+def test_multihead_leakage():
+    # M2.5: No future leakage
+    B, T = 2, 5
+    d_model, h = 6, 3
+    input_ = torch.randn(B, T, d_model)
+    multihead_attn1 = MultiHeadAttention(d_model, h)
+    mask = causal_mask(5)
+    output1, _ = multihead_attn1(input_, input_, input_, mask=mask)
+    input__ = input_.clone()
+    input__[:, 4, :] = 2.4354
+    output2, _ = multihead_attn1(input__, input__, input__, mask=mask)
+    assert torch.all(output1[:, :4, :] == output2[:, :4, :])
+    assert torch.all(output1[:, 4, :] != output2[:, 4, :])
