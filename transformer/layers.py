@@ -24,9 +24,13 @@ class LayerNorm(nn.Module):
 class FeedForward(nn.Module):
     def __init__(self, d_model, d_ff, dropout):
         super().__init__()
+        self.l1 = nn.Linear(d_model, d_ff)
+        self.l2 = nn.Linear(d_ff, d_model)
+        self.dropout = nn.Dropout(dropout)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        pass
+        return self.l2(self.dropout(self.relu(self.l1(x))))
 
 
 class PositionalEncoding(nn.Module):
