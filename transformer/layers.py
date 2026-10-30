@@ -3,6 +3,7 @@
 import torch
 import torch.nn as nn
 import math
+import numpy as np
 
 
 
@@ -36,9 +37,19 @@ class FeedForward(nn.Module):
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, max_len, dropout):
         super().__init__()
+        positions = torch.arange(0, max_len, dtype=torch.float32).reshape(max_len, 1)
+        values = torch.arange(0, d_model, 2, dtype=torch.float32)
+        divisors = torch.exp(-( values / d_model ) * math.log(10_000))
+        angles = positions * divisors
+        table = torch.zeros(max_len, d_model)
+        table[:, 0::2] = torch.sin(angles)
+        table[:, 1::2] = torch.cos(angles)
+        self.register_buffer('lookup_table', table)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        pass
+        T = x.shape[1]
+        return self.dropout(self.lookup_table[:T, :] + x)
 
 
 class Embeddings(nn.Module):
