@@ -9,7 +9,7 @@ The original encoder-decoder Transformer implemented from the paper, without tut
 - [x] M1 Scaled dot-product attention and masks
 - [x] M2 Multi-head attention
 - [x] M3 LayerNorm, feed-forward, positional encoding, embeddings
-- [ ] M4 Encoder
+- [x] M4 Encoder
 - [ ] M5 Decoder
 - [ ] M6 Full Transformer
 - [ ] M7 Toy task: sequence reversal
