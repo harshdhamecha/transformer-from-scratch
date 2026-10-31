@@ -1,8 +1,10 @@
 """Tests for causal mask, padding mask, and combining them."""
 
 import torch
+import pytest
 from transformer.masks import causal_mask, padding_mask
 from transformer.attention import attention
+
 
 
 def test_causal_mask():
@@ -66,7 +68,7 @@ def test_masked_row():
 
 
 def test_pad_mask():
-    # M4.1: Check padding mask shape and value
+    # M4.1: Check padding mask and its dtype
     tokens = torch.tensor([
         [4, 5, 2, 9],
         [3, 9, 1, 1],
@@ -79,4 +81,18 @@ def test_pad_mask():
     ])
     pad_mask2 = padding_mask(tokens, pad_id=1)
     assert torch.equal(pad_mask1, pad_mask2)
-    assert pad_mask1.dtype == pad_mask2.dtype
+    assert pad_mask2.dtype == torch.bool
+
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="GPU is not available")
+def test_pad_mask_device():
+    # M4.1: Check padding mask device
+    tokens = torch.tensor([
+        [4, 5, 2, 9],
+        [3, 9, 1, 1],
+        [8, 0, 2, 1]
+    ])
+    tokens = tokens.to("cuda")
+    pad_mask = padding_mask(tokens, pad_id=1)
+    assert pad_mask.device == tokens.device
