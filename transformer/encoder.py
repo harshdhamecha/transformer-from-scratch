@@ -10,7 +10,7 @@ class EncoderLayer(nn.Module):
     def __init__(self, d_model, h, d_ff, dropout, eps=1e-5):
         super().__init__()
 
-    def forward(self, x):
+    def forward(self, x, mask=None):
         pass
 
 
