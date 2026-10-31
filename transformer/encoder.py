@@ -23,8 +23,15 @@ class EncoderLayer(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self):
+    def __init__(self, N, vocab_size, max_len, d_model, h, d_ff, dropout, eps=1e-5):
         super().__init__()
+        self.embedding = Embeddings(vocab_size, d_model)
+        self.pe = PositionalEncoding(d_model, max_len, dropout)
+        self.encoder_layers = nn.ModuleList([EncoderLayer(d_model, h, d_ff, dropout, eps) for i in range(N)])
 
-    def forward(self, x):
-        pass
+    def forward(self, tokens, mask=None):
+        inputs = self.pe(self.embedding(tokens))
+        output = inputs
+        for i, _ in enumerate(self.encoder_layers):
+            output = self.encoder_layers[i](output, mask)
+        return output
