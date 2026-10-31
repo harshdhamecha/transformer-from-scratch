@@ -145,9 +145,7 @@ In `transformer/masks.py`:
 **Know:**
 
 1. What problem do residual connections solve?
-2. Post-norm vs pre-norm: what is the difference, and why did later models move to pre-norm?
-3. Why does a batch of sentences need padding at all?
-4. Why is the padding mask `(B, 1, T)` and not `(B, T, T)`? Which dimension does broadcasting stretch?
+2. Why does a batch of sentences need padding at all?
 
 **Done when:**
 
