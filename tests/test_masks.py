@@ -1,7 +1,7 @@
 """Tests for causal mask, padding mask, and combining them."""
 
 import torch
-from transformer.masks import causal_mask
+from transformer.masks import causal_mask, padding_mask
 from transformer.attention import attention
 
 
@@ -63,3 +63,20 @@ def test_masked_row():
     assert not torch.isnan(output1).any()
     assert torch.all(output1[:, 1, :] == output2[:, 1, :])
     torch.testing.assert_close(value.mean(dim=1), output1[:, 0, :])
+
+
+def test_pad_mask():
+    # M4.1: Check padding mask shape and value
+    tokens = torch.tensor([
+        [4, 5, 2, 9],
+        [3, 9, 1, 1],
+        [8, 0, 2, 1]
+    ])
+    pad_mask1 = torch.tensor([
+        [[True, True, True, True]],
+        [[True, True, False, False]],
+        [[True, True, True, False]]
+    ])
+    pad_mask2 = padding_mask(tokens, pad_id=1)
+    assert torch.equal(pad_mask1, pad_mask2)
+    assert pad_mask1.dtype == pad_mask2.dtype
